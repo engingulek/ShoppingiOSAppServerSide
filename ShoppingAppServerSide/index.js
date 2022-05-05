@@ -8,6 +8,11 @@ app.use(bodyParser.json());
 app.use(cors()); // Kim bu ip bağlanırsa bağlansın hiç bir hata çıkmayacak
 
 
+const productRouter = require("./router/product")
+const categoryRouter = require("./router/category")
+
+
+
 
 mongoose.connection.once("open",()=>{
     console.log("Connect to DB!")
@@ -15,6 +20,12 @@ mongoose.connection.once("open",()=>{
 }).on("error",(error)=>{
     console.log("Failed to connect" + error)
 })
+
+// routers
+
+app.use("/",productRouter)
+app.use("/",categoryRouter)
+
 
 
 // serverın bir portu dinlemi için çalıştırıyoruz
