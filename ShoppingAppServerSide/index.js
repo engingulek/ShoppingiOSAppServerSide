@@ -10,7 +10,7 @@ app.use(cors()); // Kim bu ip bağlanırsa bağlansın hiç bir hata çıkmayaca
 
 const productRouter = require("./router/product")
 const categoryRouter = require("./router/category")
-
+const cartListRouter = require("./router/cartList")
 
 
 
@@ -25,6 +25,7 @@ mongoose.connection.once("open",()=>{
 
 app.use("/",productRouter)
 app.use("/",categoryRouter)
+app.use("/",cartListRouter)
 
 
 
