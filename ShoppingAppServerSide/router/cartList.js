@@ -138,6 +138,7 @@ router.post("/productPieceIncDec", (req, res) => {
     );
 
     var updateCartProduct = {}
+    var newUpdateCartList = []
       if (req.body.type == "inc") {
         updateCartProduct = {
           cartProductImgUrl: cartProductFilterList[0].cartProductImgUrl,
@@ -149,23 +150,31 @@ router.post("/productPieceIncDec", (req, res) => {
         };
 
   }else if (req.body.type  == "dec"){
-    updateCartProduct = {
-      cartProductImgUrl: cartProductFilterList[0].cartProductImgUrl,
-      cartProductPiece: cartProductFilterList[0].cartProductPiece - 1,
-      cartProductName: cartProductFilterList[0].cartProductName,
-      cartProductCategory: cartProductFilterList[0].cartProductCategory,
-      cartProductPrice: cartProductFilterList[0].cartProductPrice,
-      cartProductId: cartProductFilterList[0].cartProductId,
-    };
+    if(cartProductFilterList[0].cartProductPiece == 1) {
+      newUpdateCartList = cartProductOrderFilterList;
+    }
+
+    else {
+      updateCartProduct = {
+        cartProductImgUrl: cartProductFilterList[0].cartProductImgUrl,
+        cartProductPiece: cartProductFilterList[0].cartProductPiece - 1,
+        cartProductName: cartProductFilterList[0].cartProductName,
+        cartProductCategory: cartProductFilterList[0].cartProductCategory,
+        cartProductPrice: cartProductFilterList[0].cartProductPrice,
+        cartProductId: cartProductFilterList[0].cartProductId,
+      };
+
+      newUpdateCartList = cartProductOrderFilterList;
+        newUpdateCartList.push(updateCartProduct);
+
+
+    }
+  
 
   }else{
     console.log("Error")
   }
-
-  
-
-  var newUpdateCartList = cartProductOrderFilterList;
-        newUpdateCartList.push(updateCartProduct);
+ 
 
         var updateCartList = {
           _id: cartfilterList[0]._id,
@@ -184,20 +193,47 @@ router.post("/productPieceIncDec", (req, res) => {
           .catch((err) => {
             res.json(err);
           });
+  })
+});
+
+router.post("/deleteProduct", (req, res) => {
+  console.log(req.body)
+CartList.find().then((cartList)=>{
+  var cartfilterList = cartList.filter(
+    (x) => x.cartListUserId == req.body.userId
+  );
+
+  var cartProductOrderFilterList = cartfilterList[0].cartList.filter(
+    (x) => x.cartProductId != req.body.cartProductId
+  );
+
+  var updateCartListt = {
+    _id: cartfilterList[0]._id,
+    cartListUserId: cartfilterList[0].cartListUserId,
+    cartList: cartProductOrderFilterList,
+  };
+
+  CartList.findByIdAndUpdate(cartfilterList[0]._id, updateCartListt)
+  .then((cartList) => {
+    res.json({
+      cartList: updateCartListt,
+      success: 1,
+    });
+  })
+  .catch((err) => {
+    res.json(err);
+  });
+
+})
 
 
 
-    
-    
+
+
   
 
-  })
 
 
-
-
-
- 
-});
+})
 
 module.exports = router;
