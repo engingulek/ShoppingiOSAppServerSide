@@ -1,130 +1,203 @@
-const express = require('express');
-const CartList = require('../models/CartList');
-const CartProductList = require('../models/CartProductList');
+const express = require("express");
+const CartList = require("../models/CartList");
+const CartProductList = require("../models/CartProductList");
 
 const router = express.Router();
-var list = []
-router.get("/getCartList",(req,res)=> {
-    CartList.find()
-    .then(cartList => {
-        list = cartList
+var list = [];
+router.get("/getCartList", (req, res) => {
+  CartList.find()
+    .then((cartList) => {
+      list = cartList;
 
-        res.json({
-            cartList : cartList,
-            success : 1
-        })
+      res.json({
+        cartList: cartList,
+        success: 1,
+      });
     })
-    .catch(err =>{
-        res.json(err)
-    })
-})
+    .catch((err) => {
+      res.json(err);
+    });
+});
 
+router.post("/postCartList", (req, res) => {
+  CartList.find().then((cartList) => {
+    //console.log(cartList)
+    // Kullanıcını sepetini getirmektdit
 
-router.post("/postCartList",(req,res)=>{
+    if (cartList.length == 0) {
+      console.log("Sepet yeni oluşturuldu");
+      console.log(req.body.cartList)
+      console.log(req.body.cartListUserId)
+      const cartList = new CartList({
+        cartListUserId:req.body.cartListUserId,
+        cartList : req.body.cartList
+      })
+
+      cartList.save()
+      res.json({
+        success:1,
+        messsage:"success"
+      })
     
-    CartList.find().then(cartList=>{
-        //console.log(cartList)
-        // Kullanıcını sepetini getirmektdit
-       var cartfilterList = cartList.filter(x=>x.cartListUserId == req.body.cartListUserId)
-       // sepetteki ürünler gelmektedir.
+    } 
+    
+    else {
+      var cartfilterList = cartList.filter(
+        (x) => x.cartListUserId == req.body.cartListUserId
+      );
+      // sepetteki ürünler gelmektedir.
 
-       ///Sepete tekrar tekrar eklenen ürün
-       var cartProductFilterList = cartfilterList[0].cartList.filter(x=>x.cartProductId == req.body.cartList[0].cartProductId)
+      ///Sepete tekrar tekrar eklenen ürün
+      var cartProductFilterList = cartfilterList[0].cartList.filter(
+        (x) => x.cartProductId == req.body.cartList[0].cartProductId
+      );
       // sepetteki diğer ürün
-       var cartProductOrderFilterList = cartfilterList[0].cartList.filter(x=>x.cartProductId != req.body.cartList[0].cartProductId)
+      var cartProductOrderFilterList = cartfilterList[0].cartList.filter(
+        (x) => x.cartProductId != req.body.cartList[0].cartProductId
+      );
 
-       if (cartProductFilterList.length == 0) {
-           if (cartProductOrderFilterList.length == 0) {
-               console.log("Sepette başka ürün bulunmamaktafır")
-           }else{
-               console.log("Sepette başka bir ürün bulunmaktadır")
-               console.log(cartProductOrderFilterList[0])
-           }
-        
-           // yeni eklenen ürün
-           // req.body.cartList[0].cartProductId
-           
-           console.log("Ürün yeni eklendi")
-       }else{
-           // tekrar eklenen ürün olduğunda 
+      if (cartProductFilterList.length) {
+        console.log("Sepete ürün tekrar eklenedi");
+        // diğer ürünler
+        //console.log(cartProductOrderFilterList)
 
-           if (cartProductOrderFilterList.length == 0) {
-            console.log("Sepette başka ürün bulunmamaktafır")
-        }else{
-            console.log("Sepette başka bir ürün bulunmaktadır")
-            console.log(cartProductOrderFilterList[0])
-            var orderProductCartList = cartProductOrderFilterList[0]
+        var updateCartProduct = {
+          cartProductImgUrl: cartProductFilterList[0].cartProductImgUrl,
+          cartProductPiece: cartProductFilterList[0].cartProductPiece + 1,
+          cartProductName: cartProductFilterList[0].cartProductName,
+          cartProductCategory: cartProductFilterList[0].cartProductCategory,
+          cartProductPrice: cartProductFilterList[0].cartProductPrice,
+          cartProductId: cartProductFilterList[0].cartProductId,
+        };
 
-            // tekrar eklenen ürünün güncellenmesi
+        var newUpdateCartList = cartProductOrderFilterList;
+        newUpdateCartList.push(updateCartProduct);
 
-            // tekrar eklenen ürün
-            console.log("Tekrar eklenen ürün")
-            //console.log(cartProductFilterList[0])
+        var updateCartList = {
+          _id: cartfilterList[0]._id,
+          cartListUserId: cartfilterList[0].cartListUserId,
+          cartList: newUpdateCartList,
+        };
 
-            var updateProduct = {
-                cartProductImgUrl :  cartProductFilterList[0].cartProductImgUrl,
-                cartProductPiece : cartProductFilterList[0].cartProductPiece + 1,
-                cartProductName: cartProductFilterList[0].cartProductName,
-                cartProductCategory : cartProductFilterList[0].cartProductCategory,
-                cartProductPrice: cartProductFilterList[0].cartProductPrice,
-                cartProductId : cartProductFilterList[0].cartProductId
+        console.log(updateCartList);
+        CartList.findByIdAndUpdate(cartfilterList[0]._id, updateCartList)
+          .then((cartList) => {
+            res.json({
+              cartList: updateCartList,
+              success: 1,
+            });
+          })
+          .catch((err) => {
+            res.json(err);
+          });
+      } else {
+        console.log("Ürün sepete yeni eklnedi");
+        // console.log(cartProductOrderFilterList)
+        var updateNewProductCartList = cartProductOrderFilterList;
+        //updateNewProductCartList.cartList.push(req.body.cartList)
+        //console.log(updateNewProductCartList)
+        //console.log(req.body.cartList[0])
+        updateNewProductCartList.push(req.body.cartList[0]);
 
+        var updateCartList = {
+          _id: cartfilterList[0]._id,
+          cartListUserId: cartfilterList[0].cartListUserId,
+          cartList: updateNewProductCartList,
+        };
 
-            }
-
-            
-            console.log("Tekrar eklenen ürün güncellendi")
-            console.log(updateProduct)
-            console.log("Diğer ürün")
-            console.log(orderProductCartList)
-
-            console.log(cartfilterList[0]._id)
-            console.log(cartfilterList[0].cartListUserId)
-
-            var updateProductCartList = [updateProduct,orderProductCartList ]
-            console.log("Güncellenen Sepet")
-            
-
-            console.log(cartList)
-
-            var updateCartList = {
-                _id : cartfilterList[0]._id,
-                cartListUserId : cartfilterList[0].cartListUserId,
-                cartList : updateProductCartList
-            }
-            console.log("Sepet güncellendi")
-            console.log(updateCartList)
-
-            
-
-            CartList.findByIdAndUpdate(cartfilterList[0]._id,updateCartList)
-            .then((cartList)=>{
-                res.json({
-                    cartList:updateCartList,
-                    success:1
-                })
-            })
-            .catch(err =>{
-                res.json(err)
-            }) 
-            
-
-            
+        CartList.findByIdAndUpdate(cartfilterList[0]._id, updateCartList)
+          .then((cartList) => {
+            res.json({
+              cartList: updateCartList,
+              success: 1,
+            });
+          })
+          .catch((err) => {
+            res.json(err);
+          });
+      }
+    }
+  });
+});
 
 
+router.post("/productPieceIncDec", (req, res) => {
 
-        }
-           
-           console.log("Ürün tekrar eklendi")
-       }
-       
-     
-      
-    })
+
+  CartList.find().then((cartList)=>{
+    var cartfilterList = cartList.filter(
+      (x) => x.cartListUserId == req.body.userId
+    );
+    // işlem yapılacak ürün
+    var cartProductFilterList = cartfilterList[0].cartList.filter(
+      (x) => x.cartProductId == req.body.cartProductId
+    );
+    // sepetteki diğer ürün
+    var cartProductOrderFilterList = cartfilterList[0].cartList.filter(
+      (x) => x.cartProductId != req.body.cartProductId
+    );
+
+    var updateCartProduct = {}
+      if (req.body.type == "inc") {
+        updateCartProduct = {
+          cartProductImgUrl: cartProductFilterList[0].cartProductImgUrl,
+          cartProductPiece: cartProductFilterList[0].cartProductPiece + 1,
+          cartProductName: cartProductFilterList[0].cartProductName,
+          cartProductCategory: cartProductFilterList[0].cartProductCategory,
+          cartProductPrice: cartProductFilterList[0].cartProductPrice,
+          cartProductId: cartProductFilterList[0].cartProductId,
+        };
+
+  }else if (req.body.type  == "dec"){
+    updateCartProduct = {
+      cartProductImgUrl: cartProductFilterList[0].cartProductImgUrl,
+      cartProductPiece: cartProductFilterList[0].cartProductPiece - 1,
+      cartProductName: cartProductFilterList[0].cartProductName,
+      cartProductCategory: cartProductFilterList[0].cartProductCategory,
+      cartProductPrice: cartProductFilterList[0].cartProductPrice,
+      cartProductId: cartProductFilterList[0].cartProductId,
+    };
+
+  }else{
+    console.log("Error")
+  }
+
   
+
+  var newUpdateCartList = cartProductOrderFilterList;
+        newUpdateCartList.push(updateCartProduct);
+
+        var updateCartList = {
+          _id: cartfilterList[0]._id,
+          cartListUserId: cartfilterList[0].cartListUserId,
+          cartList: newUpdateCartList,
+        };
+
+        console.log(updateCartList);
+        CartList.findByIdAndUpdate(cartfilterList[0]._id, updateCartList)
+          .then((cartList) => {
+            res.json({
+              cartList: updateCartList,
+              success: 1,
+            });
+          })
+          .catch((err) => {
+            res.json(err);
+          });
+
+
+
     
+    
+  
+
+  })
+
+
+
+
 
  
-})
+});
 
-module.exports = router
+module.exports = router;
